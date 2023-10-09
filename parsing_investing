@@ -1,19 +1,33 @@
+#Для проверки времени и даты чтоб делать проверку на наличие новых новостей
+import datetime
+#Библиотеки для работы с сайтом
 import requests
 from bs4 import BeautifulSoup
-
-def parsing_investing(name):
+#Для ссылок получение их
+import re
+#parsing_investing(для category,что мы ищем,номер num_cat(потому что сайт фикалия подстраиваюсь под страницы))
+def parsing_investing(cat_name,poisk_name,number):
+    #Ссылки на страницы
     category={
         'last_news':'https://ru.investing.com/news/latest-news',
         'popular':'https://ru.investing.com/news/most-popular-news',
         'now':'https://ru.investing.com/news/headlines',
         'corona':'https://ru.investing.com/news/coronavirus',
         'foreks':'https://ru.investing.com/news/forex-news',
-        'Commodities':'https://ru.investing.com/news/commodities-news',
+        'commodities':'https://ru.investing.com/news/commodities-news',
         'fond': 'https://ru.investing.com/news/stock-market-news',
         'economy': 'https://ru.investing.com/news/economy',
-        'economy indicators': 'https://ru.investing.com/news/economic-indicators',
+        'economy indicators': 'https://ru.investing.com/news/economic-indicators'
     }
-    def last_news(url,seek):
+    #Создание файлов со страницы и нужные страницы
+    #last_news(для category,ссылка,номер num_cat(потому что сайт фикалия подстраиваюсь под страницы))
+    def last_news(cat_name,url,seek,number):
+        # Все возможные варианты как может быть запрос
+        seek_word_list = [seek[0].upper() + seek[1:].lower(), seek.lower(), seek, seek.upper()]
+        #Собираем со всех страниц данные чтоб потом использовать их
+        all_last_news=[]
+        all_last_news_more=[]
+        #Заходим как обычный пользователь
         headers={
             'Accept':'* / *',
             "User - Agent":"Mozilla / 5.0(Windows NT 10.0;Win64;x64) AppleWebKit / 537.36(KHTML, likeGecko) Chrome / 116.0.0.0Safari / 537.36OPR / 102.0.0.0(EditionYxGX)"
@@ -23,30 +37,95 @@ def parsing_investing(name):
         soup=BeautifulSoup(src,'lxml')
 
         page=soup.find_all('a',class_='pagination')
-
-        if page!=[]:
-
-            for i in range(int(page[-1].text)):
-
-
-                now_site = BeautifulSoup(requests.get(url+'/'+i, headers=headers).text, 'lxml')
-                last_news=now_site.find_all("a",class_='title')
-
-                if seek[0].upper()+seek[1:] in str(last_news[i]) or seek in str(last_news[i]):
-                    print(last_news[i].text)
+        #Проверка сколько страниц
+        if page==[]:
+            page.append(1)
         else:
-            now_site = BeautifulSoup(requests.get(url, headers=headers).text, 'lxml')
-            last_news = tuple(now_site.find_all("a", class_='title'))
-            for i in range(len(last_news)):
-                print(last_news[i].text)
-
-                if seek[0].upper() + seek[1:] in str(last_news[i]) or seek in str(last_news[i]):
-                    print(last_news[i].text)
-                    print(i)
+            page[-1]=page[-1].text
+        #Получаем все новости и под новости
+        for i in range(int(page[-1])):
 
 
+            now_site = BeautifulSoup(requests.get(url+'/'+str(i), headers=headers).text, 'lxml')
+            last_news=now_site.find_all("a",class_='title')
 
-    last_news(category[name],'костин')
+            last_news_more = now_site.find_all("p")
 
-if name == 'main':
-    parsing_investing('popular')
+            #Подстраиваемся под сайт(потому что сайт фикалия)
+            if number == '1':
+
+                last_news = last_news[6:len(last_news) - 10]
+            elif number == '2':
+                last_news = last_news[6:]
+            elif int(number)>3:
+
+                last_news_more = last_news_more[1:-1]
+                last_news = last_news[6:len(last_news)-10]
+            #Добавляем в массив
+            all_last_news.extend(last_news)
+            all_last_news_more.extend(last_news_more)
+        #Убираем дубликаты
+        all_last_news=set(all_last_news)
+        all_last_news_more=set(all_last_news_more)
+        #Создание файлов с новостями все
+        my_file_news=open(cat_name + '.txt','w',encoding="utf-8")
+        my_file_news_more = open(cat_name+'_more' + '.txt', 'w',encoding="utf-8")
+        # Создание файлов с новостями нужные
+        my_file_news_need = open(cat_name + '_need' + '.txt', 'w',encoding="utf-8")
+        my_file_news_more_need = open(cat_name + '_need' + '_more' + '.txt', 'w',encoding="utf-8")
+
+        #Проверка надо ли переписывать страницу
+
+        date_time=open('check_time.txt','w',encoding="utf-8")
+
+        date_time.write(str(datetime.datetime.now()))
+        date_time.close()
+        # Запись в файл и нахождение нужного новости
+        for item_news in all_last_news:
+            my_file_news.write(str(item_news))
+            for item_seek in seek_word_list:
+                if item_seek in str(item_news.text):
+                    my_file_news_need.write(str(item_news))
+                    print(item_news.text)
+                    break
+        my_file_news.write(str(datetime.datetime.now()))
+
+        # Запись в файл и нахождение нужного под новости
+        for item_news in all_last_news_more:
+            my_file_news_more.write(str(item_news))
+            for item_seek in seek_word_list:
+                if item_seek in str(item_news.text):
+                    my_file_news_more_need.write(str(item_news))
+                    print(item_news.text)
+                    break
+        my_file_news_more.write(str(datetime.datetime.now()))
+
+        #Закрытие файлов
+        my_file_news.close()
+        my_file_news_more.close()
+
+        my_file_news_need.close()
+        my_file_news_more_need.close()
+
+        #Очистка
+        del all_last_news,all_last_news_more,last_news,last_news_more
+
+    #last_news(для category,ссылка,номер num_cat(потому что сайт фикалия подстраиваюсь под страницы))
+    last_news(cat_name,category[cat_name],poisk_name,number)
+
+if __name__ == '__main__':
+    num_cat={
+        '1':'last_news',
+        '2':'popular',
+        '3':'now',
+        '4':'corona',
+        '5':'foreks',
+        '6':'commodities',
+        '7':'fond',
+        '8':'economy',
+        '9':'economy indicators'
+    }
+    number='1'
+    seek_word='Saudi'
+    # parsing_investing(для category,что мы ищем,номер num_cat(потому что сайт фикалия подстраиваюсь под страницы))
+    parsing_investing(num_cat[number],seek_word,number)
