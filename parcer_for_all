@@ -1,0 +1,95 @@
+import requests
+import random
+from bs4 import BeautifulSoup
+from user_aggents import user_agent_list
+def parsing(name):
+    category={'investing':{
+        'last_news':'https://ru.investing.com/news/latest-news',
+        'popular':'https://ru.investing.com/news/most-popular-news',
+        'now':'https://ru.investing.com/news/headlines',
+        'coronavirus':'https://ru.investing.com/news/coronavirus',
+        'forex':'https://ru.investing.com/news/forex-news',
+        'commodities':'https://ru.investing.com/news/commodities-news',
+        'fond': 'https://ru.investing.com/news/stock-market-news',
+        'economy': 'https://ru.investing.com/news/economy',
+        'economic-indicators': 'https://ru.investing.com/news/economic-indicators',
+        'crypto':'https://ru.investing.com/news/cryptocurrency-news',
+        'box': 'a',
+        'class': ''
+        },
+        'ria':{
+            'politics': 'https://ria.ru/politics/',
+            'world': 'https://ria.ru/world/',
+            'economy': 'https://ria.ru/economy/',
+            'society': 'https://ria.ru/society/',
+            'incidents': 'https://ria.ru/incidents/',
+            'army': 'https://ria.ru/defense_safety/',
+            'science': 'https://ria.ru/science/',
+            'sport': 'https://rsport.ria.ru',
+            'culture': 'https://ria.ru/culture/',
+            'religion': 'https://ria.ru/religion/',
+            'tourism': 'https://ria.ru/tourism/',
+            'box':'',
+            'class':'',
+            'down_class':''
+        },
+        'bcs':{
+            'all_news':'',
+            '': '',
+            '': '',
+            '': '',
+            '': '',
+            '': '',
+            '': '',
+            '': '',
+            'box': 'feed-item__head',
+            'class': 'feed-item__title',
+            'down_class':'feed-item__summary'
+        }
+    }
+    def last_news(url,seek):
+        def random_user_agent_headers():
+            '''Возвращет рандомный user-agent и друге параметры для имитации запроса из браузера'''
+            rnd_index = random.randint(0, len(user_agent_list) - 1)
+            return user_agent_list[rnd_index]
+        headers={
+            'Accept':'* / *',
+            "User-Agent":random_user_agent_headers()
+        }
+        src=requests.get(url,headers=headers).text
+
+        soup=BeautifulSoup(src,'lxml')
+
+        page=soup.find_all('a',class_='pagination')
+
+        if page!=[]:
+
+            for i in range(int(page[-1].text)):
+
+
+                now_site = BeautifulSoup(requests.get(url+'/'+i, headers=headers).text, 'lxml')
+                last_news=now_site.find_all("a",class_='title')
+
+                if seek[0].upper()+seek[1:] in str(last_news[i]) or seek in str(last_news[i]):
+                    print(last_news[i].text)
+        else:
+            now_site = BeautifulSoup(requests.get(url, headers=headers).text, 'lxml')
+            last_news = tuple(now_site.find_all("a", class_='title'))
+            for i in range(len(last_news)):
+                # print(last_news[i].text)
+
+                if seek[0].upper() + seek[1:] in str(last_news[i]) or seek in str(last_news[i]):
+                    print(last_news[i].text)
+                    # print(i)
+
+    a={1,2}
+    b={1}
+    print(a==b)
+    if 1 in a:
+        print("sdf")
+    for i in category:
+        print(i)
+    last_news(category[name],'20')
+
+if __name__== '__main__':
+    parsing('popular')
